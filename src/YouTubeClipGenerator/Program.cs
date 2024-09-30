@@ -387,6 +387,9 @@ public class AppCommands
         // Trim leading/trailing whitespaces and dots
         sanitizedInput = sanitizedInput.Trim().Trim('.');
 
+        // Replace - with underlines
+        sanitizedInput = sanitizedInput.Replace("-", "_");
+
         // Ensure filename is not empty
         if (string.IsNullOrEmpty(sanitizedInput))
         {

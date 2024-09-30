@@ -258,6 +258,13 @@ public class AppCommands
 
         if (randomClip)
         {
+            var totalTime = (int)duration.Value.TotalSeconds - length;
+            if (totalTime <= 0)
+            {
+                this.log.LogError($"Video {videoId} is too short for a random clip.");
+                return;
+            }
+
             seekTime = this.random.Next(seekTime, (int)duration.Value.TotalSeconds - length);
         }
 
@@ -407,22 +414,6 @@ public class AppCommands
     }
 
     string ResolutionToFFMpegScale(Resolution resolution)
-    {
-        return resolution switch
-        {
-            Resolution.p144 => "256:144",
-            Resolution.p240 => "426:240",
-            Resolution.p360 => "640:360",
-            Resolution.p480 => "854:480",
-            Resolution.p720 => "1280:720",
-            Resolution.p1080 => "1920:1080",
-            Resolution.p1440 => "2560:1440",
-            Resolution.p2160 => "3840:2160",
-            _ => "1920:1080",
-        };
-    }
-
-    string ResolutionToScale(Resolution resolution)
     {
         return resolution switch
         {

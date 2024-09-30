@@ -1,0 +1,54 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Video",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/src/YouTubeClipGenerator/bin/Debug/net9.0/YouTubeClipGenerator.dll",
+            "args": ["video", "https://www.youtube.com/watch?v=YRySrXk9uRA", "-o", "${workspaceFolder}/artifacts"],
+            "cwd": "${workspaceFolder}/src/YouTubeClipGenerator",
+            "console": "internalConsole",
+            "stopAtEntry": false
+        },
+        {
+            "name": "Video (Random)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/src/YouTubeClipGenerator/bin/Debug/net9.0/YouTubeClipGenerator.dll",
+            "args": ["video", "https://www.youtube.com/watch?v=YRySrXk9uRA", "-o", "${workspaceFolder}/artifacts", "-r"],
+            "cwd": "${workspaceFolder}/src/YouTubeClipGenerator",
+            "console": "internalConsole",
+            "stopAtEntry": false
+        },
+        {
+            "name": "Video (Random 480p)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/src/YouTubeClipGenerator/bin/Debug/net9.0/YouTubeClipGenerator.dll",
+            "args": ["video", "https://www.youtube.com/watch?v=YRySrXk9uRA", "-o", "${workspaceFolder}/artifacts", "-r", "-q", "p480"],
+            "cwd": "${workspaceFolder}/src/YouTubeClipGenerator",
+            "console": "internalConsole",
+            "stopAtEntry": false
+        },
+        {
+            "name": "Handle (Random 480p)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/src/YouTubeClipGenerator/bin/Debug/net9.0/YouTubeClipGenerator.dll",
+            "args": ["handle", "crazyfoodcrew425", "-o", "${workspaceFolder}/artifacts", "-r", "-q", "p480"],
+            "cwd": "${workspaceFolder}/src/YouTubeClipGenerator",
+            "console": "internalConsole",
+            "stopAtEntry": false
+        },
+        {
+            "name": ".NET Core Attach",
+            "type": "coreclr",
+            "request": "attach"
+        }
+    ]
+}

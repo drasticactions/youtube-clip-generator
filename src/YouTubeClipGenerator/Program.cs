@@ -263,7 +263,7 @@ public class AppCommands
 
         this.log.Log($"Generating clip from {videoId} at {TimeSpan.FromSeconds(seekTime)} for {length} seconds.");
 
-        (var videoUri, var audioUri, var scaleSize) = await GetUnmuxedManfiestUrisAsync(videoId, videoResolution);
+        (var videoUri, var audioUri, var scaleSize) = await GetManifestUrisAsync(videoId, videoResolution);
 
         if (videoUri == null)
         {
@@ -294,7 +294,7 @@ public class AppCommands
         }
     }
 
-    private async Task<(string?, string?, bool)> GetUnmuxedManfiestUrisAsync(VideoId videoId, Resolution? videoResolution = default)
+    private async Task<(string?, string?, bool)> GetManifestUrisAsync(VideoId videoId, Resolution? videoResolution = default)
     {
         try
         {

@@ -84,6 +84,8 @@ public class AppCommands
             return;
         }
 
+        videoIds = await PickRandomVideos(videoIds, clipsToGenerate);
+
         foreach (var videoId in videoIds)
         {
             await ProcessVideoAsync(videoId, startTimeInSeconds, lengthInSeconds, randomClip, outputPath, videoResolution);
@@ -110,6 +112,8 @@ public class AppCommands
             this.log.LogError($"Failed to get video IDs for {user}");
             return;
         }
+
+        videoIds = await PickRandomVideos(videoIds, clipsToGenerate);
 
         foreach (var videoId in videoIds)
         {
@@ -138,6 +142,8 @@ public class AppCommands
             return;
         }
 
+        videoIds = await PickRandomVideos(videoIds, clipsToGenerate);
+
         foreach (var videoId in videoIds)
         {
             await ProcessVideoAsync(videoId, startTimeInSeconds, lengthInSeconds, randomClip, outputPath, videoResolution);
@@ -164,6 +170,8 @@ public class AppCommands
             this.log.LogError($"Failed to get video IDs for {handle}");
             return;
         }
+
+        videoIds = await PickRandomVideos(videoIds, clipsToGenerate);
 
         foreach (var videoId in videoIds)
         {
@@ -192,10 +200,23 @@ public class AppCommands
             return;
         }
 
+        videoIds = await PickRandomVideos(videoIds, clipsToGenerate);
+
         foreach (var videoId in videoIds)
         {
             await ProcessVideoAsync(videoId, startTimeInSeconds, lengthInSeconds, randomClip, outputPath, videoResolution);
         }
+    }
+
+    private Task<List<VideoId>> PickRandomVideos(List<VideoId> videoIds, int clipsToGenerate)
+    {
+        var randomVideos = new List<VideoId>();
+        for (int i = 0; i < clipsToGenerate; i++)
+        {
+            var randomIndex = this.random.Next(0, videoIds.Count);
+            randomVideos.Add(videoIds[randomIndex]);
+        }
+        return Task.FromResult(randomVideos);
     }
 
     private async Task<List<VideoId>?> GetVideoIdsFromPlaylistIdAsync(string playlistId, int clipsToGenerate)
@@ -222,7 +243,7 @@ public class AppCommands
                 fullVideoList.Add(video.Id);
             }
             this.log.Log($"Found {fullVideoList.Count} videos.");
-            return fullVideoList.OrderBy(n => this.random.Next()).Take(clipsToGenerate).ToList();
+            return fullVideoList.ToList();
         }
         catch (Exception ex)
         {
@@ -299,7 +320,7 @@ public class AppCommands
                 fullVideoList.Add(video.Id);
             }
             this.log.Log($"Found {fullVideoList.Count} videos.");
-            return fullVideoList.OrderBy(n => this.random.Next()).Take(clipsToGenerate).ToList();
+            return fullVideoList.ToList();
         }
         catch (Exception ex)
         {

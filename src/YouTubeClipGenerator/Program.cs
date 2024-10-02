@@ -10,6 +10,7 @@ using YouTubeClipGenerator;
 using YoutubeExplode;
 using YoutubeExplode.Channels;
 using YoutubeExplode.Common;
+using YoutubeExplode.Playlists;
 using YoutubeExplode.Videos;
 using YoutubeExplode.Videos.Streams;
 
@@ -167,6 +168,66 @@ public class AppCommands
         foreach (var videoId in videoIds)
         {
             await ProcessVideoAsync(videoId, startTimeInSeconds, lengthInSeconds, randomClip, outputPath, videoResolution);
+        }
+    }
+
+    /// <summary>
+    /// Generate clips from a YouTube playlist.
+    /// </summary>
+    /// <param name="playlistId">The YouTube Playlist.</param>
+    /// <param name="clipsToGenerate">-c, Number of clips to generate. Defaults to 5.</param>
+    /// <param name="startTimeInSeconds">-ss, the seek time in seconds for the start of the clip. When using Random Clip, sets the start time for the seed.</param>
+    /// <param name="lengthInSeconds">-l, Length of the clip, defaults to 5.</param>
+    /// <param name="randomClip">-r, Make random clip.</param>
+    /// <param name="outputPath">-o, Output path for the video. Defaults to the current directory.</param>
+    /// <param name="videoResolution">-q, Video resolution. Defaults to the highest available.</param>
+    /// <returns></returns>
+    [Command("playlist")]
+    public async Task GetVideosFromPlaylistId([Argument] string playlistId, int clipsToGenerate = 5, int startTimeInSeconds = 0, int lengthInSeconds = 5, bool randomClip = false, string? outputPath = default, Resolution? videoResolution = default)
+    {
+        var videoIds = await GetVideoIdsFromPlaylistIdAsync(playlistId, clipsToGenerate);
+        if (videoIds == null)
+        {
+            this.log.LogError($"Failed to get video IDs for {playlistId}");
+            return;
+        }
+
+        foreach (var videoId in videoIds)
+        {
+            await ProcessVideoAsync(videoId, startTimeInSeconds, lengthInSeconds, randomClip, outputPath, videoResolution);
+        }
+    }
+
+    private async Task<List<VideoId>?> GetVideoIdsFromPlaylistIdAsync(string playlistId, int clipsToGenerate)
+    {
+        try
+        {
+            var id = PlaylistId.TryParse(playlistId);
+            if (id == null)
+            {
+                this.log.LogError($"Invalid playlist ID: {playlistId}");
+                return null;
+            }
+            var playlist = await this.youtubeClient.Playlists.GetAsync(id.Value);
+            if (playlist == null)
+            {
+                this.log.LogError($"Failed to get playlist {playlistId}");
+                return null;
+            }
+
+            var videos = await this.youtubeClient.Playlists.GetVideosAsync(id.Value);
+            var fullVideoList = new List<VideoId>();
+            foreach (var video in videos)
+            {
+                fullVideoList.Add(video.Id);
+            }
+            this.log.Log($"Found {fullVideoList.Count} videos.");
+            return fullVideoList.OrderBy(n => this.random.Next()).Take(clipsToGenerate).ToList();
+        }
+        catch (Exception ex)
+        {
+            this.log.LogError(ex.Message);
+            return null;
         }
     }
 

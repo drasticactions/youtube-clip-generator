@@ -392,7 +392,13 @@ public class AppCommands
             var scaleSize = true;
             if (videoResolution is not null)
             {
-                var videoInt = Int32.Parse(videoResolution.Value.ToString().Substring(1));
+                // if resolution starts with p, substring it. Otherwise, parse it.
+                var resolution = videoResolution.Value.ToString();
+                if (resolution.StartsWith("p"))
+                {
+                    resolution = resolution.Substring(1);
+                }
+                var videoInt = Int32.Parse(resolution);
                 streams = streams.Where(n => n.VideoQuality.MaxHeight <= videoInt);
                 scaleSize = false;
             }

@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Text.RegularExpressions;
 using CliWrap;
 using ConsoleAppFramework;
+using FFMpegCore;
 using YouTubeClipGenerator;
 using YoutubeExplode;
 using YoutubeExplode.Channels;
@@ -338,16 +339,24 @@ public class AppCommands
             return;
         }
 
-        if (randomClip)
+        try
         {
-            var totalTime = (int)duration.Value.TotalSeconds - length;
-            if (totalTime <= 0)
+            if (randomClip)
             {
-                this.log.LogError($"Video {videoId} is too short for a random clip.");
-                return;
-            }
+                var totalTime = (int)duration.Value.TotalSeconds - length;
+                if (totalTime <= 0)
+                {
+                    this.log.LogError($"Video {videoId} is too short for a random clip.");
+                    return;
+                }
 
-            seekTime = this.random.Next(seekTime, (int)duration.Value.TotalSeconds - length);
+                seekTime = this.random.Next(seekTime, (int)duration.Value.TotalSeconds - length);
+            }
+        }
+        catch (Exception ex)
+        {
+            this.log.LogError(ex.Message);
+            return;
         }
 
         this.log.Log($"Generating clip from {videoId} at {TimeSpan.FromSeconds(seekTime)} for {length} seconds.");
@@ -425,32 +434,62 @@ public class AppCommands
         }
     }
 
+    private async Task<string> ProcessVideoClipAsync(Uri videoUri, string videoId, int seekTime, int length, string? defaultPath = default, Resolution? videoResolution = default, bool scaleSize = false)
+    {
+        defaultPath ??= Environment.CurrentDirectory;
+        Directory.CreateDirectory(defaultPath);
+        var videoFilename = ConvertToValidFilename($"{videoId}_video_{Guid.NewGuid()}.mp4");
+        var videoPath = Path.Combine(defaultPath, videoFilename);
+
+        var arguments = FFMpegArguments.FromUrlInput(videoUri, options =>
+        {
+            options.Seek(TimeSpan.FromSeconds(seekTime));
+        }).OutputToFile(videoPath, true, options =>
+        {
+            options.EndSeek(TimeSpan.FromSeconds(seekTime + length));
+        }).ProcessAsynchronously();
+
+        var result = await arguments;
+        if (!result)
+        {
+            this.log.LogError("Failed to generate clip.");
+            return string.Empty;
+        }
+        return videoPath;
+    }
+
     private async Task ProcessClipAsync(Uri videoUri, Uri audioUri, string videoId, int seekTime, int length, string? defaultPath = default, Resolution? videoResolution = default, bool scaleSize = false)
     {
-        try {
+        try
+        {
             var stopWatch = new Stopwatch();
             defaultPath ??= Environment.CurrentDirectory;
             Directory.CreateDirectory(defaultPath);
             var videoFilename = ConvertToValidFilename($"{videoId}_{Guid.NewGuid()}.mp4");
             var videoPath = Path.Combine(defaultPath, videoFilename);
-            var arguments = new List<string>();
-            arguments.AddRange(new string[] { "-ss", TimeSpanToFFmpeg(TimeSpan.FromSeconds(seekTime)), "-i", videoUri.ToString(), "-ss", TimeSpanToFFmpeg(TimeSpan.FromSeconds(seekTime)), "-i", audioUri.ToString(), "-t", TimeSpanToFFmpeg(TimeSpan.FromSeconds(length)) });
-            if (videoResolution is not null && scaleSize)
-            {
-                arguments.AddRange(new string[] { "-vf", $"scale={ResolutionToFFMpegScale(videoResolution.Value)}" });
-            }
-            
-            arguments.Add(videoPath);
 
+            var arguments = FFMpegArguments
+                .FromUrlInput(videoUri, options =>
+                {
+                    options.Seek(TimeSpan.FromSeconds(seekTime));
+                })
+                .AddUrlInput(audioUri, options =>
+                {
+                    options.Seek(TimeSpan.FromSeconds(seekTime));
+                })
+                .OutputToFile(videoPath, true, options =>
+                {
+                    options.WithVideoCodec(FFMpegCore.Enums.VideoCodec.LibX264).WithAudioCodec(FFMpegCore.Enums.AudioCodec.Aac)
+                    .WithFastStart().WithDuration(TimeSpan.FromSeconds(length));
+                }
+            );
+
+            var list = arguments.Arguments;
             stopWatch.Start();
-            var result = await Cli.Wrap("ffmpeg")
-                .WithArguments(arguments)
-                .WithWorkingDirectory(Environment.CurrentDirectory)
-                .ExecuteAsync();
-
+            var result = await arguments.ProcessAsynchronously();
             stopWatch.Stop();
 
-            if (result.ExitCode != 0)
+            if (!result)
             {
                 this.log.LogError("Failed to generate clip.");
                 return;

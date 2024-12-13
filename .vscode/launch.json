@@ -13,6 +13,17 @@
             "stopAtEntry": false
         },
         {
+            "name": "Chapter",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/src/YouTubeClipGenerator/bin/Debug/net9.0/YouTubeClipGenerator.dll",
+            "args": ["chapter", "https://www.youtube.com/watch?v=tEeS-Pxc6VY", "-o", "${workspaceFolder}/artifacts"],
+            "cwd": "${workspaceFolder}/src/YouTubeClipGenerator",
+            "console": "internalConsole",
+            "stopAtEntry": false
+        },
+        {
             "name": "Video (Random)",
             "type": "coreclr",
             "request": "launch",

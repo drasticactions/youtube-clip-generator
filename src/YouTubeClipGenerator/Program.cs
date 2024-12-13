@@ -3,6 +3,7 @@
 // </copyright>
 
 using System.Diagnostics;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using CliWrap;
 using ConsoleAppFramework;
@@ -39,6 +40,49 @@ public class AppCommands
 #endif
 
         this.youtubeClient = new YoutubeClient(new HttpClient() { Timeout = TimeSpan.FromSeconds(3) });
+    }
+
+    /// <summary>
+    /// Generate a clip from a YouTube video chapters.
+    /// </summary>
+    /// <param name="videoUri">The YouTube Video URL or ID.</param>
+    /// <param name="outputPath">-o, Output path for the video. Defaults to the current directory.</param>
+    /// <returns>Task.</returns>
+    [Command("chapter")]
+    public async Task SplitVideoIntoChapters([Argument] string videoUri, string? outputPath = default)
+    {
+        var videoId = VideoId.TryParse(videoUri);
+        if (videoId == null)
+        {
+            this.log.LogError($"Invalid video URL: {videoUri}");
+            return;
+        }
+
+        var video = await this.youtubeClient.Videos.GetAsync(videoId.Value);
+        var chapterPath = Path.Combine(outputPath ?? Environment.CurrentDirectory);
+
+        var chapterJson = JsonSerializer.Serialize(video.Chapters, SourceGenerationContext.Default.ChapterDescriptionArray);
+        var chapterJsonPath = Path.Combine(chapterPath, $"{videoId}_chapters.json");
+        await File.WriteAllTextAsync(chapterJsonPath, chapterJson);
+
+        for (int i = 0; i < video.Chapters.Count; i++)
+        {
+            ChapterDescription? chapter = video.Chapters[i];
+            var chapterStart = chapter.TimeRangeStartMillis;
+            var chapterEnd = video.Chapters.Count > i + 1 ? video.Chapters[i + 1].TimeRangeStartMillis : video.Duration!.Value.TotalMilliseconds;
+            var chapterLength = chapterEnd - chapterStart;
+            var chapterTitle = chapter.Title;
+            var chapterFilename = ConvertToValidFilename($"{videoId}_{chapterTitle}.mp4");
+            if (File.Exists(Path.Combine(chapterPath, chapterFilename)))
+            {
+                this.log.Log($"Chapter {chapterTitle} already exists.");
+                continue;
+            }
+            this.log.Log($"Generating chapter {chapterTitle} from {TimeSpan.FromMilliseconds(chapterStart)} to {TimeSpan.FromMilliseconds(chapterEnd)}.");
+
+            await ProcessVideoAsync(videoId.Value, (int)TimeSpan.FromMilliseconds(chapterStart).TotalSeconds, (int)TimeSpan.FromMilliseconds(chapterLength).TotalSeconds, false, chapterPath, outputName: chapterFilename);
+        }
+        
     }
 
     /// <summary>
@@ -330,7 +374,7 @@ public class AppCommands
         }
     }
 
-    private async Task ProcessVideoAsync(VideoId videoId, int seekTime, int length, bool randomClip, string? outputPath = default, Resolution? videoResolution = default)
+    private async Task ProcessVideoAsync(VideoId videoId, int seekTime, int length, bool randomClip, string? outputPath = default, Resolution? videoResolution = default, string? outputName = default)
     {
         var duration = await GetLengthOfVideoAsync(videoId);
         if (duration == null)
@@ -375,7 +419,7 @@ public class AppCommands
             return;
         }
 
-        await ProcessClipAsync(new Uri(videoUri), new Uri(audioUri), videoId.Value, seekTime, length, outputPath, videoResolution, scaleSize);
+        await ProcessClipAsync(new Uri(videoUri), new Uri(audioUri), videoId.Value, seekTime, length, outputPath, videoResolution, scaleSize, outputName);
     }
 
     private async Task<TimeSpan?> GetLengthOfVideoAsync(VideoId videoId)
@@ -434,11 +478,11 @@ public class AppCommands
         }
     }
 
-    private async Task<string> ProcessVideoClipAsync(Uri videoUri, string videoId, int seekTime, int length, string? defaultPath = default, Resolution? videoResolution = default, bool scaleSize = false)
+    private async Task<string> ProcessVideoClipAsync(Uri videoUri, string videoId, int seekTime, int length, string? defaultPath = default, Resolution? videoResolution = default, bool scaleSize = false, string? outputName = default)
     {
         defaultPath ??= Environment.CurrentDirectory;
         Directory.CreateDirectory(defaultPath);
-        var videoFilename = ConvertToValidFilename($"{videoId}_video_{Guid.NewGuid()}.mp4");
+        var videoFilename = outputName ?? ConvertToValidFilename($"{videoId}_video_{Guid.NewGuid()}.mp4");
         var videoPath = Path.Combine(defaultPath, videoFilename);
 
         var arguments = FFMpegArguments.FromUrlInput(videoUri, options =>
@@ -458,14 +502,14 @@ public class AppCommands
         return videoPath;
     }
 
-    private async Task ProcessClipAsync(Uri videoUri, Uri audioUri, string videoId, int seekTime, int length, string? defaultPath = default, Resolution? videoResolution = default, bool scaleSize = false)
+    private async Task ProcessClipAsync(Uri videoUri, Uri audioUri, string videoId, int seekTime, int length, string? defaultPath = default, Resolution? videoResolution = default, bool scaleSize = false, string? outputName = default)
     {
         try
         {
             var stopWatch = new Stopwatch();
             defaultPath ??= Environment.CurrentDirectory;
             Directory.CreateDirectory(defaultPath);
-            var videoFilename = ConvertToValidFilename($"{videoId}_{Guid.NewGuid()}.mp4");
+            var videoFilename = outputName ?? ConvertToValidFilename($"{videoId}_{Guid.NewGuid()}.mp4");
             var videoPath = Path.Combine(defaultPath, videoFilename);
 
             var arguments = FFMpegArguments

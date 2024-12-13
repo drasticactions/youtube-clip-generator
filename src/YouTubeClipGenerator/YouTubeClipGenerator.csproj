@@ -14,9 +14,9 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="FFMpegCore.NativeAOT" Version="6.0.0-preview" />
-    <PackageReference Include="YoutubeExplode" Version="6.4.3" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.0-rc.2.24473.5" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.0-rc.2.24473.5" />
+    <PackageReference Include="DrasticActions.YoutubeExplode" Version="6.5.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.0" />
     <PackageReference Include="CliWrap" Version="3.6.6" />
   </ItemGroup>
 

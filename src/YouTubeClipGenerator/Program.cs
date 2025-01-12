@@ -41,6 +41,101 @@ public class AppCommands
 
         this.youtubeClient = new YoutubeClient(new HttpClient() { Timeout = TimeSpan.FromSeconds(3) });
     }
+    
+    /// <summary>
+    /// Generate a clip from a YouTube video from the top of the heatmap if available.
+    /// </summary>
+    /// <param name="videoUri">The video uri.</param>
+    /// <param name="startTimeBefore">-sb, length of time to start before the hit.</param>
+    /// <param name="startTimeAfter">-sa, length of time after to continue with the clip.</param>
+    /// <param name="outputPath">-o, Output path.</param>
+    /// <param name="videoResolution">-q, Video resolution. Defaults to the highest available.</param>
+    /// <returns></returns>
+    [Command("heatmap")]
+    public async Task GetClipFromHeadmapAsync([Argument] string videoUri, int startTimeBefore = 2, int startTimeAfter = 5, string? outputPath = default, Resolution? videoResolution = default)
+    {
+        var videoId = VideoId.TryParse(videoUri);
+        if (videoId == null)
+        {
+            this.log.LogError($"Invalid video URL: {videoUri}");
+            return;
+        }
+
+        var client = new YoutubeClient();
+        var video = await client.Videos.GetAsync(videoId.Value);
+        if (video.Heatmap is null)
+        {
+            this.log.LogError("No heatmap available for this video.");
+            return;
+        }
+
+        var heatmap = video.Heatmap;
+        
+        var test = heatmap.OrderByDescending(n => n.HeatMarkerIntensityScoreNormalized).ToList();
+        var maxIndex = test[0].MarkerStart;
+
+        var seekTime = maxIndex.TotalSeconds - startTimeBefore;
+        var length = startTimeBefore + startTimeAfter;
+        await ProcessVideoAsync(videoId.Value, (int)seekTime, length, false, outputPath, videoResolution);
+    }
+
+    /// <summary>
+    /// Generate a clip from a YouTube video from the top of the heatmap if available.
+    /// </summary>
+    /// <param name="channelId">The video uri.</param>
+    /// <param name="startTimeBefore">-sb, length of time to start before the hit.</param>
+    /// <param name="startTimeAfter">-sa, length of time after to continue with the clip.</param>
+    /// <param name="outputPath">-o, Output path.</param>
+    /// <param name="videoResolution">-q, Video resolution. Defaults to the highest available.</param>
+    /// <returns></returns>
+    [Command("heatmap channel-id")]
+    public async Task GetClipFromHeadmapChannelAsync([Argument] string channelId, int startTimeBefore = 4, int startTimeAfter = 4, string? outputPath = default, Resolution? videoResolution = default)
+    {
+        var channelIdParsed = ChannelId.TryParse(channelId);
+        if (channelIdParsed == null)
+        {
+            this.log.LogError($"Invalid channel ID: {channelId}");
+            return;
+        }
+
+        var client = new YoutubeClient();
+        var channel = await client.Channels.GetAsync(channelIdParsed.Value);
+        if (channel == null)
+        {
+            this.log.LogError($"Failed to get channel {channelId}");
+            return;
+        }
+
+        var videos = await client.Channels.GetUploadsAsync(channelIdParsed.Value);
+        var videoIds = new List<VideoId>();
+        foreach (var video in videos)
+        {
+            videoIds.Add(video.Id);
+        }
+
+        foreach(var videoId in videoIds)
+        {
+            var video = await client.Videos.GetAsync(videoId);
+            if (video.Heatmap is null)
+            {
+                this.log.LogError("No heatmap available for this video.");
+                continue;
+            }
+
+            var heatmap = video.Heatmap;
+            
+            var test = heatmap.Where(n => n.MarkerStart.TotalSeconds > 2).OrderByDescending(n => n.HeatMarkerIntensityScoreNormalized).ToList();
+            var maxIndex = test[0].MarkerStart;
+
+            var seekTime = maxIndex.TotalSeconds - startTimeBefore;
+            if (seekTime < 0)
+            {
+                seekTime = 0;
+            }
+            var length = startTimeBefore + startTimeAfter;
+            await ProcessVideoAsync(videoId, (int)seekTime, length, false, outputPath, videoResolution);
+        }
+    }
 
     /// <summary>
     /// Generate a clip from a YouTube video chapters.

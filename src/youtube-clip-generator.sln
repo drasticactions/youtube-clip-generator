@@ -5,6 +5,8 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YouTubeClipGenerator", "YouTubeClipGenerator\YouTubeClipGenerator.csproj", "{E9F2BF20-9FFF-484C-8AB1-EFB8E72FFC3E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YoutubeExplode", "..\external\YoutubeExplode\YoutubeExplode\YoutubeExplode.csproj", "{B44B364F-CE28-459A-B4FC-9D1F1CCD7AA1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{E9F2BF20-9FFF-484C-8AB1-EFB8E72FFC3E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E9F2BF20-9FFF-484C-8AB1-EFB8E72FFC3E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E9F2BF20-9FFF-484C-8AB1-EFB8E72FFC3E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B44B364F-CE28-459A-B4FC-9D1F1CCD7AA1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B44B364F-CE28-459A-B4FC-9D1F1CCD7AA1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B44B364F-CE28-459A-B4FC-9D1F1CCD7AA1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B44B364F-CE28-459A-B4FC-9D1F1CCD7AA1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
